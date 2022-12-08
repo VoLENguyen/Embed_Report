@@ -1,6 +1,4 @@
-#include <Arduino.h>
-#include <stdio.h>
-#include <Adafruit_Sensor.h>
+
 /// blynk tk cua ban
 #define BLYNK_TEMPLATE_ID "TMPL5jSUFBWu"
 #define BLYNK_DEVICE_NAME "Temp and Hum"
@@ -9,11 +7,18 @@
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
 #include <DHT.h>
+#include <DNSServer.h>
+#include <ESP8266WebServer.h>
+#include <WiFiManager.h> 
+#include <EEPROM.h>
+#include <Arduino.h>
+#include <stdio.h>
+#include <Adafruit_Sensor.h>
 /* DINH NGHIA CHO DHT11*/
 
 #define DHTPIN 10 /*chân out duoc noi với GPIO 10 */
 #define DHTTYPE DHT11
-
+#define bt D8
 /* dinh nghia nut nhan va den */
 /* nut nhan ao ( virtualpin) */
 #define Vir_Pin1   V1
@@ -44,9 +49,9 @@ BlynkTimer timer;
 DHT dht(DHTPIN, DHTTYPE);
 
 char auth[] = BLYNK_AUTH_TOKEN;
-char SSID[] = ".......";
-char pass[] = ".......";
-
+// char SSID[] = ".......";
+// char pass[] = ".......";
+WiFiManager wifiManager;
 
 /*gửi trạng thái nút nhấn từ blynk về esp*/
 
@@ -97,11 +102,25 @@ BLYNK_CONNECTED()
 }
 void setup()
 {
+  long t = millis();
+  pinMode(bt, INPUT); // bt wire D8 and 3.3V
+  EEPROM.begin(512);
   Serial.begin(115200);
-  Blynk.begin(auth, SSID, pass);
+  //Blynk.begin(auth, SSID, pass);
   Serial.println("DHT11__test!");
   dht.begin(); // Bắt đầu đọc dữ liệu
-
+  delay(3000);
+  if (digitalRead(bt) == 1)
+  {
+    wifiManager.resetSettings();
+    delay(1000);
+  }
+  //  wifiManager.resetSettings();    
+  //Uncomment this to wipe WiFi settings from EEPROM on boot.  Comment out and recompile/upload after 1 boot cycle.
+  wifiManager.autoConnect("ESP_8266");
+  // if you get here you have connected to the WiFi
+  Serial.println("connected...ok :)");
+  Blynk.begin(auth, WiFi.SSID().c_str(), WiFi.psk().c_str());
   //-----------------------
   //-------------------------------------------
   pinMode(BTN1, INPUT_PULLUP);
@@ -236,6 +255,7 @@ void listen_push_buttons()
 }
 void loop()
 {
+  Serial.println(digitalRead(bt));
   Blynk.run();
   timer.run();
   listen_push_buttons();
